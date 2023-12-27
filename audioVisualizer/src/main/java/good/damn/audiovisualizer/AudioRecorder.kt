@@ -15,7 +15,7 @@ class AudioRecorder
     companion object {
         private const val TAG = "AudioRecorder"
         private const val mSampleRate = 44100
-        private const val mBufferSize = mSampleRate // 500 ms
+        private const val mBufferSize = 8192
     }
 
     private val mSampleData = ByteArray(mBufferSize)
@@ -58,7 +58,8 @@ class AudioRecorder
                 }
             }
 
-            val digSample = (mSampleData[0].toInt() shl 8) or (mSampleData[1].toInt());
+            val i = mSampleData.size - 1
+            val digSample = (mSampleData[i-1].toInt() shl 8) or (mSampleData[i].toInt());
             val sample = digSample / fMax
             mOnSampleListener?.onSample(sample, mSampleData)
 

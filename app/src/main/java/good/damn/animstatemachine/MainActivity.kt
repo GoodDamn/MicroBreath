@@ -75,8 +75,8 @@ class MainActivity : AppCompatActivity() {
                 override fun onSample(
                     sample: Float,
                     digSample: ByteArray) {
-                    bubbleView.addBubble(sample)
                     runOnUiThread {
+                        bubbleView.addBubble(sample)
                         textView.text = "$sample"
                     }
                 }

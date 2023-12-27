@@ -10,28 +10,33 @@ import android.util.Log
 import android.view.View
 import java.util.*
 import kotlin.math.abs
+import kotlin.math.sin
 
 class BubbleView(context: Context)
-    : View(context),
-      Runnable {
+    : View(context)
+{
 
     private val TAG = "BubbleView"
 
     private val mPaint = Paint()
+    private val mPaintShiny = Paint()
     private val mRandom = Random()
 
-    private val mBubblesRect = LinkedList<RectF>()
+    private val mRectShiny = RectF()
+    private val mRectSin = RectF()
+    private val mBubblesRect = LinkedList<Bubble>()
 
-    private val mHandlerMain = Handler(Looper.getMainLooper())
-    private val mRunMainInvalidate = Runnable {
-        invalidate()
-    }
+    private var mCycle = 0L
 
-    private var mIsInterrupted = false
+    private var mIsInterrupted = true
 
     init {
         mPaint.color = 0xffff0000.toInt()
         mPaint.style = Paint.Style.STROKE
+
+        mPaintShiny.color = 0xffff0000.toInt()
+        mPaintShiny.style = Paint.Style.STROKE
+        mPaintShiny.strokeCap = Paint.Cap.ROUND
     }
 
     override fun onLayout(
@@ -47,7 +52,7 @@ class BubbleView(context: Context)
 
         val sWidth = k * 0.01f
         mPaint.strokeWidth = sWidth
-
+        mPaintShiny.strokeWidth = sWidth
     }
 
     override fun onDraw(
@@ -59,8 +64,13 @@ class BubbleView(context: Context)
         }
 
         if (mBubblesRect.isEmpty()) {
+            if (!mIsInterrupted) {
+                invalidate()
+            }
             return
         }
+
+        mCycle++
 
         if (mBubblesRect[0].bottom - 1 < 0) {
             Log.d(TAG, "onDraw: REMOVE ELEMENT OUT OF VIEW")
@@ -68,28 +78,52 @@ class BubbleView(context: Context)
         }
 
         mBubblesRect.forEach {
-            it.top--
-            it.bottom--
+            it.top -= it.speed
+            it.bottom -= it.speed
+
+            val w = it.width()
+
+            val arg = (mCycle + it.left) * 0.05f
+            val sine = sin(arg)
+
+            val exp = it.amplitude * sine
+
+            mRectSin.left = it.left + exp
+            mRectSin.right = it.right + exp
+
+            mRectSin.top = it.top
+            mRectSin.bottom = it.bottom
 
             canvas.drawArc(
-                it,
+                mRectSin,
                 0f,
                 360f,
                 true,
                 mPaint
             )
-        }
-    }
 
-    override fun run() {
-        while (!mIsInterrupted) {
-            mHandlerMain.post(mRunMainInvalidate)
-            Thread.sleep(1)
-        }
-        mIsInterrupted = false
+            // with shiny effect (top-right)
+            val radSOff = w * 0.27f
 
-        Thread.currentThread()
-            .interrupt()
+            mRectShiny.top = mRectSin.top + radSOff
+            mRectShiny.bottom = mRectSin.bottom - radSOff
+
+            mRectShiny.left = mRectSin.left + radSOff
+            mRectShiny.right = mRectSin.right - radSOff
+            canvas.drawArc(
+                mRectShiny,
+                270f,
+                90f,
+                false,
+                mPaintShiny
+            )
+        }
+
+        if (mIsInterrupted) {
+            return
+        }
+
+        invalidate()
     }
 
     fun interrupt() {
@@ -98,8 +132,7 @@ class BubbleView(context: Context)
 
     fun listen() {
         mIsInterrupted = false
-        Thread(this)
-            .start()
+        invalidate()
     }
 
     fun addBubble(
@@ -107,11 +140,11 @@ class BubbleView(context: Context)
     ) {
 
         val rad = abs(normRadius)
-        if (!isLaidOut || rad < 0.2f) {
+        if (!isLaidOut || rad < 0.5f) {
             return
         }
 
-        val r = RectF()
+        val r = Bubble()
 
         val bound = width * 0.08f * rad
         val hb = bound * 0.5f
@@ -127,6 +160,13 @@ class BubbleView(context: Context)
 
         r.bottom = height.toFloat()
         r.right = hw + hb + offsetX
+
+        r.amplitude = width * mRandom.nextFloat() * 0.25f
+        r.speed = 1 + mRandom.nextFloat() * 10
+
+        if (r.amplitude / r.speed > 2) {
+            r.amplitude /= 2
+        }
 
         mBubblesRect.add(r)
     }
