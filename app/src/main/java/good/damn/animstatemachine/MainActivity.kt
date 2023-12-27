@@ -45,9 +45,11 @@ class MainActivity : AppCompatActivity() {
 
             audioRecord.setOnSampleListener(object : AudioRecorder.OnSampleListener {
                 @SuppressLint("SetTextI18n")
-                override fun onSample(sample: Float) {
+                override fun onSample(
+                    sample: Float,
+                    digSample: ByteArray) {
                     runOnUiThread {
-                        textView.text = sample.toString()
+                        textView.text = "$sample"
                     }
                 }
             })

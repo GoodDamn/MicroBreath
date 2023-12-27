@@ -28,7 +28,7 @@ class VectorView(context: Context)
             invalidate()
         }
 
-        mAnimator.duration = 3250
+        mAnimator.duration = 250
         mAnimator.setFloatValues(0.0f,1.0f)
     }
 
