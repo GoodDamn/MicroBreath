@@ -20,8 +20,7 @@ class VectorView(context: Context)
     private var mFraction = 0.0f
 
     init {
-        mPaint.color = 0xffaaff00.toInt()
-        mPaint.strokeWidth = 15f
+        mPaint.color = 0xffff0000.toInt()
 
         mAnimator.addUpdateListener { animator ->
             mFraction = animator.animatedValue as Float
@@ -40,6 +39,10 @@ class VectorView(context: Context)
         bottom: Int
     ) {
         super.onLayout(changed, left, top, right, bottom)
+
+        val k = if (width > height) height else width
+
+        mPaint.strokeWidth = k * 0.03f
     }
 
 

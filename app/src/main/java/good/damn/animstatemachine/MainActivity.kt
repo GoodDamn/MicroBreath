@@ -9,11 +9,13 @@ import good.damn.statemachine.vertices.NormVertex
 import android.Manifest
 import android.annotation.SuppressLint
 import android.text.method.ScrollingMovementMethod
+import android.util.Size
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import good.damn.audiovisualizer.AudioRecorder
+import good.damn.audiovisualizer.BubbleView
 
 class MainActivity : AppCompatActivity() {
 
@@ -24,14 +26,39 @@ class MainActivity : AppCompatActivity() {
 
         val dm = resources.displayMetrics
 
+        val w = dm.widthPixels
+        val h = dm.heightPixels
+
+        val nativeSize = Size(
+            w, h
+        )
+
+        val vectorViewSize = Size(
+            75,
+            75
+        )
+
         val root = FrameLayout(this)
         val vectorView = VectorView(this)
         val textView = TextView(this)
-        textView.setBackgroundColor(0)
+        val bubbleView = BubbleView(this)
+
         textView.movementMethod = ScrollingMovementMethod()
 
+        val vectorParams = FrameLayout.LayoutParams(
+            vectorViewSize.width,
+            vectorViewSize.height
+        )
+
+        vectorParams.topMargin = textView.textSize.toInt()
+        vectorView.layoutParams = vectorParams
+
+
+        root.addView(bubbleView)
+
         root.addView(vectorView)
-        root.addView(textView,-1,350)
+
+        root.addView(textView,-1,textView.textSize.toInt())
 
         val permissionL = registerForActivityResult(ActivityResultContracts
             .RequestPermission()) { isGranted ->
@@ -48,6 +75,7 @@ class MainActivity : AppCompatActivity() {
                 override fun onSample(
                     sample: Float,
                     digSample: ByteArray) {
+                    bubbleView.addBubble(sample)
                     runOnUiThread {
                         textView.text = "$sample"
                     }
@@ -59,12 +87,13 @@ class MainActivity : AppCompatActivity() {
                     if (isRecording()) {
                         release()
                         vectorView.startAnimation(true)
+                        bubbleView.interrupt()
                         return@apply
                     }
                     startRecording()
                     vectorView.startAnimation()
+                    bubbleView.listen()
                 }
-
             }
         }
 
@@ -72,19 +101,19 @@ class MainActivity : AppCompatActivity() {
             arrayOf(
                 NormVertex(
                     0.8f,0.5f,
-                    0.8f,0.2f, dm
+                    0.8f,0.2f, vectorViewSize
                 ),
                 NormVertex(
                     0.2f,0.2f,
-                    0.8f,0.8f, dm
+                    0.8f,0.8f, vectorViewSize
                 ),
                 NormVertex(
                     0.2f,0.8f,
-                    0.2f, 0.8f, dm
+                    0.2f, 0.8f, vectorViewSize
                 ),
                 NormVertex(
                     0.2f,0.8f,
-                    0.2f,0.2f, dm
+                    0.2f,0.2f, vectorViewSize
                 )
             )
         )

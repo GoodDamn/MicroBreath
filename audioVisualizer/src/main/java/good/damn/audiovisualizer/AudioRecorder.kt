@@ -15,7 +15,7 @@ class AudioRecorder
     companion object {
         private const val TAG = "AudioRecorder"
         private const val mSampleRate = 44100
-        private const val mBufferSize = mSampleRate / 2
+        private const val mBufferSize = mSampleRate // 500 ms
     }
 
     private val mSampleData = ByteArray(mBufferSize)
@@ -27,7 +27,7 @@ class AudioRecorder
         mSampleRate,
         AudioFormat.CHANNEL_IN_MONO,
         AudioFormat.ENCODING_PCM_16BIT,
-        mBufferSize // 250 ms
+        mBufferSize
     )
 
     override fun startRecording() {
