@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
         )
 
         val timerViewSize = Size(
-            (w * 0.2f).toInt(),
-            (w * 0.2f).toInt()
+            (w * 0.6f).toInt(),
+            (w * 0.6f).toInt()
         )
 
         val root = FrameLayout(this)
@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
         vectorView.layoutParams = vectorParams
 
         timerParams.gravity = Gravity.CENTER_HORIZONTAL
-        timerParams.topMargin = (0.2f * w).toInt()
+        timerParams.topMargin = (0.5f * h - timerParams.height/2).toInt()
         timerView.layoutParams = timerParams
 
         root.addView(bubbleView)

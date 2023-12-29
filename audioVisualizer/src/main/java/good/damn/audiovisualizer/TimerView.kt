@@ -1,12 +1,7 @@
 package good.damn.audiovisualizer
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Point
-import android.graphics.PointF
-import android.graphics.Rect
-import android.graphics.RectF
+import android.graphics.*
 import android.util.Log
 import android.view.View
 import java.util.*
@@ -25,6 +20,7 @@ class TimerView(context: Context)
     private val mPaintText = Paint()
 
     private val mRectCircle = RectF()
+    private val mRectCircleTemp = RectF()
     private val mRectText = Rect()
 
     private val mHandler = Handler(Looper.getMainLooper())
@@ -36,10 +32,10 @@ class TimerView(context: Context)
     private var mTimeSec = 0
 
     init {
-        mPaint.color = 0xffff0000.toInt()
+        mPaint.color = 0xffaaaaaa.toInt()
         mPaint.style = Paint.Style.STROKE
 
-        mPaintText.color = 0xff0000ff.toInt()
+        mPaintText.color = 0xffaaaaaa.toInt()
     }
 
     override fun onLayout(
@@ -59,7 +55,7 @@ class TimerView(context: Context)
         val s = k * 0.03f
 
         mPaint.strokeWidth = s
-        mPaintText.textSize = k * 0.4f
+        mPaintText.textSize = k * 0.2f
 
         mRectCircle.top = s
         mRectCircle.bottom = height - s
@@ -76,13 +72,34 @@ class TimerView(context: Context)
         }
         super.onDraw(canvas)
 
-        canvas.drawArc(
-            mRectCircle,
-            0f,
-            360f,
-            true,
-            mPaint
-        )
+        val w = mRectCircle.width()
+        val h = mRectCircle.height()
+
+        var alpha = 0.1f
+        var off = 0.1f
+        while (alpha < 1.0f) {
+            mPaint.alpha = (255 * alpha).toInt()
+
+            val hof = w * off
+            val vof = h * off
+
+            mRectCircleTemp.top = mRectCircle.top + vof
+            mRectCircleTemp.bottom = mRectCircle.bottom - vof
+
+            mRectCircleTemp.left = mRectCircle.left + hof
+            mRectCircleTemp.right = mRectCircle.right - hof
+
+            canvas.drawArc(
+                mRectCircleTemp,
+                0f,
+                360f,
+                true,
+                mPaint
+            )
+
+            off += 0.1f
+            alpha += 0.3f
+        }
 
         val s = mTimeSec.toString()
 
@@ -106,7 +123,9 @@ class TimerView(context: Context)
             return
         }
 
-        mHandler.postDelayed(mRunInvalidate,1000)
+        mHandler.postDelayed(
+            mRunInvalidate,
+            1000)
 
         /*canvas.drawLine(
             0f,
@@ -126,7 +145,9 @@ class TimerView(context: Context)
     }
 
     fun startTimer() {
-        mTimeSec = 12
+        if (mTimeSec <= 0) {
+            mTimeSec = 12
+        }
         invalidate()
     }
 
