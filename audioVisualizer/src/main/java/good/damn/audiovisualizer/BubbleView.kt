@@ -29,13 +29,20 @@ class BubbleView(context: Context)
 
     private var mCycle = 0L
 
+    private var maxOffsetBubble = 0
+
+    private var mWidth4 = 0f
+    private var mWidthHalf = 0f
+    private var mHeightHalf = 0f
+    private var mBubbleBound = 0f
+
     private var mIsInterrupted = true
 
     init {
-        mPaint.color = 0xffff0000.toInt()
+        mPaint.color = 0x86aaaaaa.toInt()
         mPaint.style = Paint.Style.STROKE
 
-        mPaintShiny.color = 0xffff0000.toInt()
+        mPaintShiny.color = 0x86aaaaaa.toInt()
         mPaintShiny.style = Paint.Style.STROKE
         mPaintShiny.strokeCap = Paint.Cap.ROUND
     }
@@ -48,6 +55,12 @@ class BubbleView(context: Context)
         bottom: Int
     ) {
         super.onLayout(changed, left, top, right, bottom)
+
+        mWidth4 = width * 0.25f
+        mWidthHalf = width * 0.5f
+        mHeightHalf = height * 0.5f
+        mBubbleBound = width * 0.08f
+        maxOffsetBubble = (width * 0.05f).toInt()
 
         val k = if (width > height) height else width
 
@@ -151,10 +164,10 @@ class BubbleView(context: Context)
 
         val r = Bubble()
 
-        val bound = width * 0.08f * rad
+        val bound = mBubbleBound * rad
         val hb = bound * 0.5f
-        val hw = width * 0.5f
-        var offsetX = mRandom.nextInt((width * 0.05f).toInt())
+        val hw = mWidthHalf
+        var offsetX = mRandom.nextInt(maxOffsetBubble)
 
         if (mRandom.nextBoolean()) {
             offsetX = -offsetX
@@ -166,7 +179,7 @@ class BubbleView(context: Context)
         r.bottom = height.toFloat()
         r.right = hw + hb + offsetX
 
-        r.amplitude = width * mRandom.nextFloat() * 0.25f
+        r.amplitude = mWidth4 * mRandom.nextFloat()
         r.speed = 1 + mRandom.nextFloat() * 10
 
         if (r.amplitude / r.speed > 2) {

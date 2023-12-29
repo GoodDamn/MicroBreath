@@ -1,41 +1,112 @@
 package good.damn.audiovisualizer
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
-import android.util.Log
 import android.view.View
-import java.util.*
 import android.os.Handler
 import android.os.Looper
 
 class TimerView(context: Context)
-    : View(context) {
+    : View(context),
+      Runnable {
 
     private val TAG = "TimerView"
+
+    private var mOnTickListener: OnTickListener? = null
 
     private var mHalfWidth = 0f
     private var mHalfHeight = 0f
 
-    private val mPaint = Paint()
-    private val mPaintText = Paint()
+    private var mTextCanvas: TextCanvas
+    private var mTextCanvas2: TextCanvas
+    private var mTextCanvasMsg: TextCanvas
 
-    private val mRectCircle = RectF()
-    private val mRectCircleTemp = RectF()
-    private val mRectText = Rect()
+    private val mPaintWaves = Paint()
+
+    private val mAnimatorTextTimer = ValueAnimator()
+    private val mAnimatorWaves = ValueAnimator()
+
+    private val mCirclesRect = ArrayList<RectF>()
+    private val mCircles = ArrayList<Circle>()
 
     private val mHandler = Handler(Looper.getMainLooper())
-    private val mRunInvalidate = Runnable {
-        mTimeSec--
-        invalidate()
-    }
 
     private var mTimeSec = 0
 
     init {
-        mPaint.color = 0xffaaaaaa.toInt()
-        mPaint.style = Paint.Style.STROKE
+        val textColor = 0xffaaaaaa.toInt()
 
-        mPaintText.color = 0xffaaaaaa.toInt()
+        mPaintWaves.color = textColor
+        mPaintWaves.style = Paint.Style.STROKE
+
+        mTextCanvas = TextCanvas()
+        mTextCanvas2 = TextCanvas()
+        mTextCanvasMsg = TextCanvas()
+
+        mTextCanvas.setColor(textColor)
+        mTextCanvas2.setColor(textColor)
+        mTextCanvasMsg.setColor(textColor)
+
+        mAnimatorWaves.duration = 7500
+        mAnimatorWaves.setFloatValues(0.0f, 1.0f)
+        mAnimatorWaves.repeatCount = ValueAnimator.INFINITE
+        mAnimatorWaves.repeatMode = ValueAnimator.REVERSE
+        mAnimatorWaves.addUpdateListener {
+            val f = it.animatedValue as Float
+            for (i in mCircles.indices) {
+                val c = mCircles[i]
+                val r = mCirclesRect[i]
+
+                val w = width * 0.1f
+                val h = height * 0.1f
+
+                c.top = r.top + (h - r.top) * f
+                c.bottom = r.bottom - (r.bottom - h) * f
+
+                c.left = r.left + (w - r.left) * f
+                c.right = r.right - (r.right - w) * f
+
+                //c.top = r.top + (mHalfHeight - r.top) * f
+                //c.bottom = r.bottom - (mHalfHeight - r.bottom) * f
+                //c.left = r.left + (mHalfWidth - r.left) * f
+                //c.right = r.right - (mHalfWidth - r.right) * f
+            }
+            invalidate()
+        }
+
+        mAnimatorTextTimer.duration = 175
+        mAnimatorTextTimer.setFloatValues(0.0f,1.0f)
+        mAnimatorTextTimer.addUpdateListener {
+            val f = it.animatedValue as Float
+            val rf = 1.0f - f
+
+            mTextCanvas.apply {
+                setAlpha(rf)
+                setY(mHalfHeight - getHeight() * f)
+            }
+
+            mTextCanvas2.apply {
+                setAlpha(f)
+                setY(mHalfHeight + getHeight() * rf)
+            }
+
+            //invalidate()
+        }
+
+        val wavesCount = 4
+        val dAlpha = 1.0f / wavesCount
+        var alpha = dAlpha
+        for (i in 0 until wavesCount) {
+            val c = Circle()
+            val r = RectF()
+            c.alpha = (alpha * 255).toInt()
+            mCirclesRect.add(r)
+            mCircles.add(c)
+            alpha += dAlpha
+        }
+
+        mAnimatorWaves.start()
     }
 
     override fun onLayout(
@@ -54,14 +125,55 @@ class TimerView(context: Context)
 
         val s = k * 0.03f
 
-        mPaint.strokeWidth = s
-        mPaintText.textSize = k * 0.2f
+        val textSize = k * 0.13f
+        mTextCanvas.setTextSize(textSize)
+        mTextCanvas2.setTextSize(textSize)
 
-        mRectCircle.top = s
-        mRectCircle.bottom = height - s
+        mTextCanvasMsg.setTextSize(k * 0.065f)
 
-        mRectCircle.left = s
-        mRectCircle.right = width - s
+        mPaintWaves.strokeWidth = s
+
+        val ss = 2 * s
+        val w = width - ss
+        val h = height - ss
+
+        val o = k * 0.4f / mCircles.size
+        val dOff = mCircles.size / o
+        var off = 0f
+
+        for (i in mCircles.indices) {
+            val it = mCircles[i]
+            val hof = w * off
+            val vof = h * off
+
+            it.top = s + vof
+            it.bottom = height - s - vof
+
+            it.left = s + hof
+            it.right = width - s - hof
+
+            mCirclesRect[i].set(it)
+
+            off += dOff
+        }
+
+    }
+
+    override fun run() {
+        if (mTimeSec < 1) {
+            return
+        }
+
+        mTextCanvas.setText(mTimeSec.toString())
+        mTextCanvas2.setText((mTimeSec - 1).toString())
+
+        mTextCanvas.setX(mHalfWidth - mTextCanvas.getWidthHalf())
+        mTextCanvas2.setX(mHalfWidth - mTextCanvas2.getWidthHalf())
+
+        mAnimatorTextTimer.start()
+
+        mHandler.postDelayed(this,1000)
+        mTimeSec--
     }
 
     override fun onDraw(
@@ -72,60 +184,29 @@ class TimerView(context: Context)
         }
         super.onDraw(canvas)
 
-        val w = mRectCircle.width()
-        val h = mRectCircle.height()
-
-        var alpha = 0.1f
-        var off = 0.1f
-        while (alpha < 1.0f) {
-            mPaint.alpha = (255 * alpha).toInt()
-
-            val hof = w * off
-            val vof = h * off
-
-            mRectCircleTemp.top = mRectCircle.top + vof
-            mRectCircleTemp.bottom = mRectCircle.bottom - vof
-
-            mRectCircleTemp.left = mRectCircle.left + hof
-            mRectCircleTemp.right = mRectCircle.right - hof
-
+        mCircles.forEach {
+            mPaintWaves.alpha = it.alpha
             canvas.drawArc(
-                mRectCircleTemp,
+                it,
                 0f,
                 360f,
                 true,
-                mPaint
+                mPaintWaves
             )
-
-            off += 0.1f
-            alpha += 0.3f
         }
 
-        val s = mTimeSec.toString()
+        mTextCanvas2.draw(canvas)
+        mTextCanvas.draw(canvas)
 
-        mPaintText.getTextBounds(
-            s,
-            0,
-            s.length,
-            mRectText)
+        val textMsg = mOnTickListener?.onTickMessage(mTimeSec) ?: ""
 
-        val textX = mHalfWidth - (mRectText.right + mRectText.left) * 0.5f
-        val textY = mHalfHeight + mRectText.height() * 0.5f
-
-        canvas.drawText(
-            s,
-            textX,
-            textY,
-            mPaintText
+        mTextCanvasMsg.setText(textMsg)
+        mTextCanvasMsg.setPosition(
+            mHalfWidth - mTextCanvasMsg.getWidthHalf(),
+            mHalfHeight + mTextCanvasMsg.getHeight()
         )
+        mTextCanvasMsg.draw(canvas)
 
-        if (mTimeSec <= 0) {
-            return
-        }
-
-        mHandler.postDelayed(
-            mRunInvalidate,
-            1000)
 
         /*canvas.drawLine(
             0f,
@@ -144,19 +225,38 @@ class TimerView(context: Context)
         )*/
     }
 
+    fun setOnTickListener(
+        l: OnTickListener
+    ) {
+        mOnTickListener = l
+    }
+
     fun startTimer() {
         if (mTimeSec <= 0) {
             mTimeSec = 12
         }
         invalidate()
+        mHandler.postDelayed(
+            this,
+            1000)
     }
 
     fun pauseTimer() {
-        mHandler.removeCallbacks(mRunInvalidate)
+        mHandler.removeCallbacks(this)
     }
 
     fun stopTimer() {
-        mHandler.removeCallbacks(mRunInvalidate)
+        mHandler.removeCallbacks(this)
         mTimeSec = 0
+    }
+
+    class Circle: RectF() {
+        var alpha = 255
+    }
+
+    interface OnTickListener {
+        fun onTickMessage(
+            tickTime: Int
+        ): String
     }
 }

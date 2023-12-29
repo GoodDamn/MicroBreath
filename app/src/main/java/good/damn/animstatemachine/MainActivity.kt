@@ -136,8 +136,26 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        setContentView(root)
+        timerView.setOnTickListener(object: TimerView.OnTickListener {
+            override fun onTickMessage(tickTime: Int): String {
 
+                if (tickTime >= 9) {
+                    return "inhale"
+                }
+
+                if (tickTime >= 3) {
+                    return "hold"
+                }
+
+                if (tickTime >= 1) {
+                    return "exhale"
+                }
+
+                return "cool"
+            }
+        })
+
+        setContentView(root)
         permissionL.launch(Manifest.permission.RECORD_AUDIO)
     }
 }
