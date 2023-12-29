@@ -21,6 +21,8 @@ class AudioRecorder
     private val mSampleData = ByteArray(mBufferSize)
     private var mOnSampleListener: OnSampleListener? = null
 
+    private var mIsReleased = false
+
     @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
     constructor() : super(
         AudioSource.MIC,
@@ -38,6 +40,7 @@ class AudioRecorder
 
     override fun release() {
         super.release()
+        mIsReleased = true
     }
 
     override fun run() {
@@ -74,6 +77,10 @@ class AudioRecorder
         l: OnSampleListener
     ) {
         mOnSampleListener = l
+    }
+
+    fun isReleased(): Boolean {
+        return mIsReleased
     }
 
     fun isRecording(): Boolean {

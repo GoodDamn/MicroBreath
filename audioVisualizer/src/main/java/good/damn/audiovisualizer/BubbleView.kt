@@ -24,6 +24,7 @@ class BubbleView(context: Context)
 
     private val mRectShiny = RectF()
     private val mRectSin = RectF()
+    private val mRectParabola = RectF()
     private val mBubblesRect = LinkedList<Bubble>()
 
     private var mCycle = 0L
@@ -53,11 +54,15 @@ class BubbleView(context: Context)
         val sWidth = k * 0.01f
         mPaint.strokeWidth = sWidth
         mPaintShiny.strokeWidth = sWidth
+
+        mRectParabola.right = k * 0.5f
+        mRectParabola.bottom = k.toFloat()
     }
 
     override fun onDraw(
         canvas: Canvas?
     ) {
+
         super.onDraw(canvas)
         if (canvas == null) {
             return

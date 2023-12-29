@@ -10,12 +10,14 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.text.method.ScrollingMovementMethod
 import android.util.Size
+import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import good.damn.audiovisualizer.AudioRecorder
 import good.damn.audiovisualizer.BubbleView
+import good.damn.audiovisualizer.TimerView
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,14 +36,20 @@ class MainActivity : AppCompatActivity() {
         )
 
         val vectorViewSize = Size(
-            75,
-            75
+            (w * 0.1f).toInt(),
+            (w * 0.1f).toInt()
+        )
+
+        val timerViewSize = Size(
+            (w * 0.2f).toInt(),
+            (w * 0.2f).toInt()
         )
 
         val root = FrameLayout(this)
         val vectorView = VectorView(this)
         val textView = TextView(this)
         val bubbleView = BubbleView(this)
+        val timerView = TimerView(this)
 
         textView.movementMethod = ScrollingMovementMethod()
 
@@ -50,15 +58,22 @@ class MainActivity : AppCompatActivity() {
             vectorViewSize.height
         )
 
+        val timerParams = FrameLayout.LayoutParams(
+            timerViewSize.width,
+            timerViewSize.height
+        )
+
         vectorParams.topMargin = textView.textSize.toInt()
         vectorView.layoutParams = vectorParams
 
+        timerParams.gravity = Gravity.CENTER_HORIZONTAL
+        timerParams.topMargin = (0.2f * w).toInt()
+        timerView.layoutParams = timerParams
 
         root.addView(bubbleView)
-
         root.addView(vectorView)
-
         root.addView(textView,-1,textView.textSize.toInt())
+        root.addView(timerView)
 
         val permissionL = registerForActivityResult(ActivityResultContracts
             .RequestPermission()) { isGranted ->
@@ -85,12 +100,15 @@ class MainActivity : AppCompatActivity() {
             vectorView.setOnClickListener {
                 audioRecord.apply {
                     if (isRecording()) {
-                        release()
+                        stop()
+                        timerView.pauseTimer()
                         vectorView.startAnimation(true)
                         bubbleView.interrupt()
                         return@apply
                     }
+
                     startRecording()
+                    timerView.startTimer()
                     vectorView.startAnimation()
                     bubbleView.listen()
                 }
