@@ -6,6 +6,8 @@ import android.graphics.*
 import android.view.View
 import android.os.Handler
 import android.os.Looper
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.OvershootInterpolator
 
 class TimerView(context: Context)
     : View(context),
@@ -48,29 +50,32 @@ class TimerView(context: Context)
         mTextCanvas2.setColor(textColor)
         mTextCanvasMsg.setColor(textColor)
 
-        mAnimatorWaves.duration = 7500
+        mAnimatorWaves.duration = 5250
         mAnimatorWaves.setFloatValues(0.0f, 1.0f)
         mAnimatorWaves.repeatCount = ValueAnimator.INFINITE
         mAnimatorWaves.repeatMode = ValueAnimator.REVERSE
         mAnimatorWaves.addUpdateListener {
             val f = it.animatedValue as Float
+            val w = width * 0.5f
+            val h = height * 0.5f
+
+            val hw = w / 2
+            val hh = h / 2
+
+            val leftLimit = mHalfWidth - hw
+            val topLimit = mHalfHeight - hh
+
             for (i in mCircles.indices) {
                 val c = mCircles[i]
                 val r = mCirclesRect[i]
 
-                val w = width * 0.1f
-                val h = height * 0.1f
+                val dcx = (leftLimit - r.left) * f
+                val dcy = (topLimit - r.top) * f
+                c.left = r.left + dcx
+                c.right = r.right - dcx
 
-                c.top = r.top + (h - r.top) * f
-                c.bottom = r.bottom - (r.bottom - h) * f
-
-                c.left = r.left + (w - r.left) * f
-                c.right = r.right - (r.right - w) * f
-
-                //c.top = r.top + (mHalfHeight - r.top) * f
-                //c.bottom = r.bottom - (mHalfHeight - r.bottom) * f
-                //c.left = r.left + (mHalfWidth - r.left) * f
-                //c.right = r.right - (mHalfWidth - r.right) * f
+                c.top = r.top + dcy
+                c.bottom = r.bottom - dcy
             }
             invalidate()
         }
