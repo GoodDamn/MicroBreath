@@ -1,4 +1,4 @@
-package good.damn.audiovisualizer
+package good.damn.audiovisualizer.canvas
 
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -8,16 +8,28 @@ class TextCanvas {
 
     private val mPaint = Paint()
 
-    private var mHalfWidth = 0f
-    private var mHalfHeight = 0f
+    var mHalfWidth = 0f
+        private set
 
-    private var mWidth = 0f
-    private var mHeight = 0f
+    var mHalfHeight = 0f
+        private set
+
+    var mWidth = 0f
+        private set(value) {
+            field = value
+            mHalfWidth = value / 2
+        }
+
+    var mHeight = 0f
+        private set(value) {
+            field = value
+            mHalfHeight = value / 2
+        }
+
+    var mx = 0f
+    var my = 0f
 
     private var mRect = Rect()
-
-    private var mx = 0f
-    private var my = 0f
 
     private var mText = ""
 
@@ -47,14 +59,6 @@ class TextCanvas {
         mHalfWidth = mWidth * 0.5f
         mHalfHeight = mHeight * 0.5f
     }
-
-    fun setX(
-        x: Float
-    ) { mx = x}
-
-    fun setY(
-        y: Float
-    ) { my = y }
 
     fun setPosition(
         x: Float,
@@ -88,28 +92,13 @@ class TextCanvas {
         mPaint.textSize = size
     }
 
-    fun getWidthHalf(): Float {
-        return mHalfWidth
-    }
-
-    fun getHeightHalf(): Float {
-        return mHalfHeight
-    }
-
-    fun getWidth(): Float {
-        return mWidth
-    }
-
-    fun getHeight(): Float {
-        return mHeight
-    }
 
     fun draw(
         canvas: Canvas
     ) {
         canvas.drawText(
             mText,
-            mx,
+            mx - mHalfWidth,
             my,
             mPaint
         )
