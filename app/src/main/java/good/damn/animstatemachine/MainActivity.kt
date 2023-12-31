@@ -136,22 +136,34 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        timerView.setOnTickListener(object: TimerView.OnTickListener {
-            override fun onTickMessage(tickTime: Int): String {
+        val tickInhale = TimerView.Tick(
+            "inhale",
+            1.0f,
+            3000)
 
+        val tickHold = TimerView.Tick(
+            "hold",
+            1.0f,
+            6000
+        )
+
+        val tickExhale = TimerView.Tick(
+            "exhale",
+            0.0f,
+            2000
+        )
+
+        timerView.setOnTickListener(object: TimerView.OnTickListener {
+            override fun onTick(tickTime: Int): TimerView.Tick {
                 if (tickTime >= 9) {
-                    return "inhale"
+                    return tickInhale
                 }
 
                 if (tickTime >= 3) {
-                    return "hold"
+                    return tickHold
                 }
 
-                if (tickTime >= 1) {
-                    return "exhale"
-                }
-
-                return "cool"
+                return tickExhale
             }
         })
 

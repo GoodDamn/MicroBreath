@@ -1,5 +1,6 @@
 package good.damn.audiovisualizer
 
+import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
@@ -17,11 +18,19 @@ class TimerView(context: Context)
 
     private var mOnTickListener: OnTickListener? = null
 
+    private var mCurrentValues = floatArrayOf(0f,0f)
+
+    private var mTopLeftLimits = 0f
+    private var mCenterLimit = 0f
+    private var mHalfCenterLimit = 0f
+
     private var mHalfWidth = 0f
     private var mHalfHeight = 0f
 
     private var mTextCanvas: TextSwitcherCanvas
     private var mTextCanvasMsg: TextSwitcherCanvas
+
+    private val mDefaultTick = Tick()
 
     private val mPaintWaves = Paint()
 
@@ -52,26 +61,16 @@ class TimerView(context: Context)
             textColor)
 
         mAnimatorWaves.duration = 5250
-        mAnimatorWaves.setFloatValues(0.0f, 1.0f)
-        mAnimatorWaves.repeatCount = ValueAnimator.INFINITE
-        mAnimatorWaves.repeatMode = ValueAnimator.REVERSE
+        mAnimatorWaves.setFloatValues(mCurrentValues[0],mCurrentValues[1])
         mAnimatorWaves.addUpdateListener {
             val f = it.animatedValue as Float
-            val w = width * 0.5f
-            val h = height * 0.5f
-
-            val hw = w / 2
-            val hh = h / 2
-
-            val leftLimit = mHalfWidth - hw
-            val topLimit = mHalfHeight - hh
 
             for (i in mCircles.indices) {
                 val c = mCircles[i]
                 val r = mCirclesRect[i]
 
-                val dcx = (leftLimit - r.left) * f
-                val dcy = (topLimit - r.top) * f
+                val dcx = (mTopLeftLimits - r.left) * f
+                val dcy = (mTopLeftLimits - r.top) * f
                 c.left = r.left + dcx
                 c.right = r.right - dcx
 
@@ -92,8 +91,6 @@ class TimerView(context: Context)
             mCircles.add(c)
             alpha += dAlpha
         }
-
-        mAnimatorWaves.start()
     }
 
     override fun onLayout(
@@ -107,6 +104,11 @@ class TimerView(context: Context)
 
         mHalfWidth = width * 0.5f
         mHalfHeight = height * 0.5f
+
+        mCenterLimit = width * 0.4f
+        mHalfCenterLimit = mCenterLimit / 2
+
+        mTopLeftLimits = mHalfWidth - mHalfCenterLimit
 
         val k = if (width > height) height else width
 
@@ -170,13 +172,20 @@ class TimerView(context: Context)
 
         val prevMsg = mTextCanvasMsg.mText
 
-        val textMsg = mOnTickListener?.onTickMessage(mTimeSec) ?: ""
+        val tick = mOnTickListener?.onTick(mTimeSec) ?: mDefaultTick
 
-        if (!prevMsg.equals(textMsg)) {
+        if (!prevMsg.equals(tick.message)) {
             mTextCanvasMsg.setText(
                 prevMsg,
-                textMsg
+                tick.message
             )
+
+            mCurrentValues[0] = mCurrentValues[1]
+            mCurrentValues[1] = tick.arcState
+
+            mAnimatorWaves.setFloatValues(mCurrentValues[0],mCurrentValues[1])
+            mAnimatorWaves.duration = tick.duration
+            mAnimatorWaves.start()
 
             mTextCanvasMsg.mx = mHalfWidth
             mTextCanvasMsg.my = mHalfHeight * 1.2f
@@ -256,9 +265,15 @@ class TimerView(context: Context)
         var alpha = 255
     }
 
+    data class Tick(
+        val message: String = "",
+        val arcState: Float = 1.0f,
+        val duration: Long = 1000L
+    )
+
     interface OnTickListener {
-        fun onTickMessage(
+        fun onTick(
             tickTime: Int
-        ): String
+        ): Tick
     }
 }
