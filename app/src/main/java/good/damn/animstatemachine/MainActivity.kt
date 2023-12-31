@@ -9,6 +9,7 @@ import good.damn.statemachine.vertices.NormVertex
 import android.Manifest
 import android.annotation.SuppressLint
 import android.text.method.ScrollingMovementMethod
+import android.util.Log
 import android.util.Size
 import android.view.Gravity
 import android.widget.FrameLayout
@@ -136,34 +137,37 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        val tickInhale = TimerView.Tick(
-            "inhale",
-            1.0f,
-            3000)
-
-        val tickHold = TimerView.Tick(
-            "hold",
-            1.0f,
-            6000
-        )
-
-        val tickExhale = TimerView.Tick(
-            "exhale",
-            0.0f,
-            2000
-        )
+        val sInhale = "inhale"
+        val sHold = "hold"
+        val sExhale= "exhale"
 
         timerView.setOnTickListener(object: TimerView.OnTickListener {
-            override fun onTick(tickTime: Int): TimerView.Tick {
-                if (tickTime >= 9) {
-                    return tickInhale
-                }
+            override fun onTickAnimation(tickTime: Int): TimerView.Tick? {
+                Log.d(TAG, "onTickAnimation: $tickTime")
 
-                if (tickTime >= 3) {
-                    return tickHold
+                return when(tickTime) {
+                    12 -> TimerView.Tick(
+                        1.0f,
+                        3000)
+                    9 -> TimerView.Tick(
+                        1.0f,
+                        6000)
+                    3 -> TimerView.Tick(
+                        0.0f,
+                        2000)
+                    else -> null
                 }
+            }
 
-                return tickExhale
+            override fun onTickMessage(tickTime: Int): String? {
+                Log.d(TAG, "onTickMessage: $tickTime")
+                return when(tickTime) {
+                    12 -> sInhale
+                    9 -> sHold
+                    3 -> sExhale
+                    1 -> "Superb!"
+                    else -> null
+                }
             }
         })
 

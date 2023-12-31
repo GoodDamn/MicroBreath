@@ -1,13 +1,12 @@
 package good.damn.audiovisualizer
 
-import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.view.View
 import android.os.Handler
 import android.os.Looper
-import good.damn.audiovisualizer.canvas.TextCanvas
+import android.util.Log
 import good.damn.audiovisualizer.canvas.TextSwitcherCanvas
 
 class TimerView(context: Context)
@@ -19,6 +18,10 @@ class TimerView(context: Context)
     private var mOnTickListener: OnTickListener? = null
 
     private var mCurrentValues = floatArrayOf(0f,0f)
+
+    private var mTimeSec = 0
+    private var mDeltaTickTime = 0L
+    private var mTargetTickTime = 0L
 
     private var mTopLeftLimits = 0f
     private var mCenterLimit = 0f
@@ -40,8 +43,6 @@ class TimerView(context: Context)
     private val mCircles = ArrayList<Circle>()
 
     private val mHandler = Handler(Looper.getMainLooper())
-
-    private var mTimeSec = 0
 
     init {
         val textColor = 0xffaaaaaa.toInt()
@@ -172,20 +173,30 @@ class TimerView(context: Context)
 
         val prevMsg = mTextCanvasMsg.mText
 
-        val tick = mOnTickListener?.onTick(mTimeSec) ?: mDefaultTick
-
-        if (!prevMsg.equals(tick.message)) {
-            mTextCanvasMsg.setText(
-                prevMsg,
-                tick.message
-            )
+        Log.d(TAG, "onTickRun: $mDeltaTickTime $mTargetTickTime")
+        if (mDeltaTickTime >= mTargetTickTime) {
+            val tickAnimation = mOnTickListener?.onTickAnimation(mTimeSec)
+                ?: mDefaultTick
 
             mCurrentValues[0] = mCurrentValues[1]
-            mCurrentValues[1] = tick.arcState
+            mCurrentValues[1] = tickAnimation.arcState
 
             mAnimatorWaves.setFloatValues(mCurrentValues[0],mCurrentValues[1])
-            mAnimatorWaves.duration = tick.duration
+            mAnimatorWaves.duration = tickAnimation.duration
             mAnimatorWaves.start()
+
+            mTargetTickTime = tickAnimation.duration
+            mDeltaTickTime = 0L
+        }
+
+        val tickMessage = mOnTickListener?.onTickMessage(mTimeSec)
+            ?: prevMsg
+
+        if (!prevMsg.equals(tickMessage)) {
+            mTextCanvasMsg.setText(
+                prevMsg,
+                tickMessage
+            )
 
             mTextCanvasMsg.mx = mHalfWidth
             mTextCanvasMsg.my = mHalfHeight * 1.2f
@@ -195,6 +206,7 @@ class TimerView(context: Context)
 
         mHandler.postDelayed(this,1000)
         mTimeSec--
+        mDeltaTickTime += 1000L
     }
 
     override fun onDraw(
@@ -266,14 +278,17 @@ class TimerView(context: Context)
     }
 
     data class Tick(
-        val message: String = "",
-        val arcState: Float = 1.0f,
+        val arcState: Float = 0.0f,
         val duration: Long = 1000L
     )
 
     interface OnTickListener {
-        fun onTick(
+        fun onTickMessage(
             tickTime: Int
-        ): Tick
+        ): String?
+
+        fun onTickAnimation(
+            tickTime: Int
+        ): Tick?
     }
 }
