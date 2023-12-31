@@ -14,11 +14,10 @@ import android.util.Size
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import good.damn.audiovisualizer.AudioRecorder
 import good.damn.audiovisualizer.BubbleView
-import good.damn.audiovisualizer.TimerView
+import good.damn.audiovisualizer.CounterView
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         val vectorView = VectorView(this)
         val textView = TextView(this)
         val bubbleView = BubbleView(this)
-        val timerView = TimerView(this)
+        val counterView = CounterView(this)
 
         textView.movementMethod = ScrollingMovementMethod()
 
@@ -69,12 +68,12 @@ class MainActivity : AppCompatActivity() {
 
         timerParams.gravity = Gravity.CENTER_HORIZONTAL
         timerParams.topMargin = (0.5f * h - timerParams.height/2).toInt()
-        timerView.layoutParams = timerParams
+        counterView.layoutParams = timerParams
 
         root.addView(bubbleView)
         root.addView(vectorView)
         root.addView(textView,-1,textView.textSize.toInt())
-        root.addView(timerView)
+        root.addView(counterView)
 
         val permissionL = registerForActivityResult(ActivityResultContracts
             .RequestPermission()) { isGranted ->
@@ -102,14 +101,14 @@ class MainActivity : AppCompatActivity() {
                 audioRecord.apply {
                     if (isRecording()) {
                         stop()
-                        timerView.pauseTimer()
+                        counterView.pauseCounter()
                         vectorView.startAnimation(true)
                         bubbleView.interrupt()
                         return@apply
                     }
 
                     startRecording()
-                    timerView.startTimer()
+                    counterView.startCounter()
                     vectorView.startAnimation()
                     bubbleView.listen()
                 }
@@ -137,24 +136,33 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
+        val sRelax = "relax"
         val sInhale = "inhale"
         val sHold = "hold"
         val sExhale= "exhale"
+        val sSuperb = "Superb!"
 
-        timerView.setOnTickListener(object: TimerView.OnTickListener {
-            override fun onTickAnimation(tickTime: Int): TimerView.Tick? {
+        counterView.setStartTime(35)
+        counterView.setOnTickListener(object: CounterView.OnTickListener {
+            override fun onTickAnimation(tickTime: Int): CounterView.Tick? {
                 Log.d(TAG, "onTickAnimation: $tickTime")
 
                 return when(tickTime) {
-                    12 -> TimerView.Tick(
+                    35 -> CounterView.Tick(
+                        0.5f,
+                        7000)
+                    28 -> CounterView.Tick(
+                        0.0f,
+                        6000)
+                    22 -> CounterView.Tick(
                         1.0f,
                         3000)
-                    9 -> TimerView.Tick(
+                    19 -> CounterView.Tick(
                         1.0f,
                         6000)
-                    3 -> TimerView.Tick(
+                    13 -> CounterView.Tick(
                         0.0f,
-                        2000)
+                        10000)
                     else -> null
                 }
             }
@@ -162,10 +170,11 @@ class MainActivity : AppCompatActivity() {
             override fun onTickMessage(tickTime: Int): String? {
                 Log.d(TAG, "onTickMessage: $tickTime")
                 return when(tickTime) {
-                    12 -> sInhale
-                    9 -> sHold
-                    3 -> sExhale
-                    1 -> "Superb!"
+                    35 -> sRelax
+                    22 -> sInhale
+                    19 -> sHold
+                    13 -> sExhale
+                    3 -> sSuperb
                     else -> null
                 }
             }

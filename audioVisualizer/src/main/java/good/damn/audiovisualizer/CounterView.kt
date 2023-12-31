@@ -9,17 +9,20 @@ import android.os.Looper
 import android.util.Log
 import good.damn.audiovisualizer.canvas.TextSwitcherCanvas
 
-class TimerView(context: Context)
+class CounterView(context: Context)
     : View(context),
       Runnable {
 
-    private val TAG = "TimerView"
+    companion object {
+        private const val TAG = "TimerView"
+    }
 
     private var mOnTickListener: OnTickListener? = null
 
     private var mCurrentValues = floatArrayOf(0f,0f)
 
-    private var mTimeSec = 0
+    private var mTimeSec = 3
+    private var mStartTimeSec = 3
     private var mDeltaTickTime = 0L
     private var mTargetTickTime = 0L
 
@@ -65,7 +68,7 @@ class TimerView(context: Context)
         mAnimatorWaves.setFloatValues(mCurrentValues[0],mCurrentValues[1])
         mAnimatorWaves.addUpdateListener {
             val f = it.animatedValue as Float
-
+            Log.d(TAG, "addUpdateListener: $f")
             for (i in mCircles.indices) {
                 val c = mCircles[i]
                 val r = mCirclesRect[i]
@@ -231,21 +234,6 @@ class TimerView(context: Context)
         mTextCanvas.draw(canvas)
         mTextCanvasMsg.draw(canvas)
 
-        /*canvas.drawLine(
-            0f,
-            height * 0.5f,
-            width.toFloat(),
-            height * 0.5f,
-            mPaint
-        )
-
-        canvas.drawLine(
-            width * 0.5f,
-            0f,
-            width * 0.5f,
-            height.toFloat(),
-            mPaint
-        )*/
     }
 
     fun setOnTickListener(
@@ -254,21 +242,37 @@ class TimerView(context: Context)
         mOnTickListener = l
     }
 
-    fun startTimer() {
+    fun setStartTime(
+        t: Int
+    ) {
+        mTimeSec = t
+        mStartTimeSec = t
+    }
+
+    fun startCounter() {
         if (mTimeSec <= 0) {
-            mTimeSec = 12
+            mTimeSec = mStartTimeSec
         }
-        invalidate()
+
+        mAnimatorWaves.apply {
+            if (isStarted) {
+                resume()
+                return@apply
+            }
+            start()
+        }
+
         mHandler.postDelayed(
             this,
             1000)
     }
 
-    fun pauseTimer() {
+    fun pauseCounter() {
         mHandler.removeCallbacks(this)
+        mAnimatorWaves.pause()
     }
 
-    fun stopTimer() {
+    fun stopCounter() {
         mHandler.removeCallbacks(this)
         mTimeSec = 0
     }
