@@ -5,9 +5,9 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.core.content.ContextCompat
 import good.damn.statemachine.VectorView
-import good.damn.statemachine.vertices.NormVertex
 import android.Manifest
 import android.annotation.SuppressLint
+import android.graphics.PointF
 import android.text.method.ScrollingMovementMethod
 import android.util.Log
 import android.util.Size
@@ -18,6 +18,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import good.damn.audiovisualizer.AudioRecorder
 import good.damn.audiovisualizer.BubbleView
 import good.damn.audiovisualizer.CounterView
+import good.damn.statemachine.VectorImage
 
 class MainActivity : AppCompatActivity() {
 
@@ -102,36 +103,41 @@ class MainActivity : AppCompatActivity() {
                     if (isRecording()) {
                         stop()
                         counterView.pauseCounter()
-                        vectorView.startAnimation(true)
+                        vectorView.setTransitionIndex(1,0)
+                        vectorView.startAnimation()
                         bubbleView.interrupt()
                         return@apply
                     }
 
                     startRecording()
                     counterView.startCounter()
+                    vectorView.setTransitionIndex(0,1)
                     vectorView.startAnimation()
                     bubbleView.listen()
                 }
             }
         }
 
-        vectorView.setStateVertices(
+        vectorView.setTransitionIndex(0,1)
+        vectorView.setVectorImages(
             arrayOf(
-                NormVertex(
-                    0.8f,0.5f,
-                    0.8f,0.2f, vectorViewSize
+                VectorImage(
+                    0xffff0000.toInt(),
+                    arrayOf(
+                        PointF(0.8f * vectorViewSize.width,0.5f * vectorViewSize.height),
+                        PointF(0.2f * vectorViewSize.width,0.2f * vectorViewSize.height),
+                        PointF(0.2f * vectorViewSize.width,0.8f * vectorViewSize.height),
+                        PointF(0.2f * vectorViewSize.width,0.8f * vectorViewSize.height)
+                    )
                 ),
-                NormVertex(
-                    0.2f,0.2f,
-                    0.8f,0.8f, vectorViewSize
-                ),
-                NormVertex(
-                    0.2f,0.8f,
-                    0.2f, 0.8f, vectorViewSize
-                ),
-                NormVertex(
-                    0.2f,0.8f,
-                    0.2f,0.2f, vectorViewSize
+                VectorImage(
+                    0xffff0000.toInt(),
+                    arrayOf(
+                       PointF(0.8f * vectorViewSize.width,0.2f * vectorViewSize.height),
+                       PointF(0.8f * vectorViewSize.width,0.8f * vectorViewSize.height),
+                       PointF(0.2f * vectorViewSize.width,0.8f * vectorViewSize.height),
+                       PointF(0.2f * vectorViewSize.width,0.2f * vectorViewSize.height)
+                    )
                 )
             )
         )
