@@ -2,6 +2,7 @@ package good.damn.audiovisualizer
 
 import android.media.AudioFormat
 import android.media.AudioRecord
+import android.media.MediaRecorder
 import android.media.MediaRecorder.AudioSource
 import android.util.Log
 import androidx.annotation.RequiresPermission
@@ -11,44 +12,61 @@ class AudioRecorder
     : AudioRecord,
       Runnable {
 
-    private val TAG = "AudioRecorder"
+    companion object {
+        private const val TAG = "AudioRecorder"
+        private const val mSampleRate = 44100
+        private const val mBufferSize = 8192
+    }
 
-    private val mSampleData = ByteArray(1)
-    private var mIsRecording = false
-
+    private val mSampleData = ByteArray(mBufferSize)
     private var mOnSampleListener: OnSampleListener? = null
+
+    private var mIsReleased = false
 
     @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
     constructor() : super(
         AudioSource.MIC,
-        44100,
+        mSampleRate,
         AudioFormat.CHANNEL_IN_MONO,
-        AudioFormat.ENCODING_PCM_8BIT,
-        8192
+        AudioFormat.ENCODING_PCM_16BIT,
+        mBufferSize
     )
 
     override fun startRecording() {
         super.startRecording()
-        mIsRecording = true
         Thread(this)
             .start()
     }
 
     override fun release() {
         super.release()
-        mIsRecording = false
+        mIsReleased = true
     }
 
     override fun run() {
-        val fByteMax = Byte.MAX_VALUE.toFloat()
-        while(mIsRecording) {
-            read(mSampleData,0,1)
+        val fMax = Short.MAX_VALUE.toFloat()
+        while(recordingState == RECORDSTATE_RECORDING) {
+            when (read(mSampleData,0,mSampleData.size)) {
+                ERROR_INVALID_OPERATION -> {
+                    Log.d(TAG, "run: ERROR_INVALID_OPERATION")
+                }
+                ERROR_BAD_VALUE -> {
+                    Log.d(TAG, "run: ERROR_BAD_VALUE")
+                }
+                ERROR_DEAD_OBJECT -> {
+                    Log.d(TAG, "run: ERROR_DEAD_OBJECT")
+                }
+                ERROR -> {
+                    Log.d(TAG, "run: ERROR")
+                }
+            }
 
-            val sample = mSampleData[0] / fByteMax
-            mOnSampleListener?.onSample(sample)
+            val i = mSampleData.size - 1
+            val digSample = (mSampleData[i-1].toInt() shl 8) or (mSampleData[i].toInt());
+            val sample = digSample / fMax
+            mOnSampleListener?.onSample(sample, mSampleData)
 
             Log.d(TAG, "run: $sample")
-            Thread.sleep(150)
         }
 
         Thread.currentThread()
@@ -61,13 +79,18 @@ class AudioRecorder
         mOnSampleListener = l
     }
 
+    fun isReleased(): Boolean {
+        return mIsReleased
+    }
+
     fun isRecording(): Boolean {
-        return mIsRecording
+        return recordingState == RECORDSTATE_RECORDING
     }
 
     interface OnSampleListener {
         @WorkerThread
-        fun onSample(sample: Float)
+        fun onSample(
+            sample: Float,
+            digSample: ByteArray)
     }
-
 }

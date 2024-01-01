@@ -1,14 +1,11 @@
 package good.damn.statemachine
 
-import android.animation.Animator
-import android.animation.TimeInterpolator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.util.DisplayMetrics
+import android.graphics.PointF
 import android.view.View
-import good.damn.statemachine.vertices.StateVertex
 
 class VectorView(context: Context)
     : View(context) {
@@ -16,19 +13,19 @@ class VectorView(context: Context)
     private val mAnimator = ValueAnimator()
 
     private var mPaint = Paint()
-    private var mVertices: Array<StateVertex>? = null
-    private var mFraction = 0.0f
+    private var mVectorImages: Array<VectorImage>? = null
+
+    private var mFromIndex = 0
+    private var mToIndex = 0
 
     init {
-        mPaint.color = 0xffaaff00.toInt()
-        mPaint.strokeWidth = 15f
+        mPaint.color = 0xffff0000.toInt()
 
-        mAnimator.addUpdateListener { animator ->
-            mFraction = animator.animatedValue as Float
+        mAnimator.addUpdateListener {
             invalidate()
         }
 
-        mAnimator.duration = 3250
+        mAnimator.duration = 250
         mAnimator.setFloatValues(0.0f,1.0f)
     }
 
@@ -40,6 +37,10 @@ class VectorView(context: Context)
         bottom: Int
     ) {
         super.onLayout(changed, left, top, right, bottom)
+
+        val k = if (width > height) height else width
+
+        mPaint.strokeWidth = k * 0.03f
     }
 
 
@@ -49,59 +50,69 @@ class VectorView(context: Context)
         }
         super.onDraw(canvas)
 
-        if (mVertices == null) {
+        if (mVectorImages == null) {
             return
         }
 
-        val v = mVertices!!
+        val v = mVectorImages!!
 
-        for (i in v.indices) {
-            val a = v[i]
-            val b = if ((i+1) >= v.size)
-                        v[0]
-                    else v[i+1]
+        val ff = v[mFromIndex]
+            .vertices
+
+        val tt = v[mToIndex]
+            .vertices
+
+        for (i in ff.indices) {
+            val f = ff[i]
+            val t = tt[i]
+
+            val j = if (i+1>=ff.size) 0 else i + 1
+
+            val f2 = ff[j]
+            val t2 = tt[j]
 
             canvas.drawLine(
-                interpX(a),
-                interpY(a),
-                interpX(b),
-                interpY(b),
+                interpX(f,t),
+                interpY(f,t),
+                interpX(f2,t2),
+                interpY(f2,t2),
                 mPaint
             )
         }
+
     }
 
-    fun setStateVertices(
-        inp: Array<StateVertex>
+    fun setTransitionIndex(
+        from: Int,
+        to: Int
     ) {
-        mVertices = inp
+        mFromIndex = from
+        mToIndex = to
+    }
+
+    fun setVectorImages(
+        inp: Array<VectorImage>
+    ) {
+        mVectorImages = inp
     }
 
     fun startAnimation() {
-        startAnimation(false)
-    }
-
-    fun startAnimation(
-        reversed: Boolean
-    ) {
-        if (reversed) {
-            mAnimator.setFloatValues(1.0f,0.0f)
-        } else {
-            mAnimator.setFloatValues(0.0f,1.0f)
-        }
+        mAnimator.setFloatValues(0.0f,1.0f)
         mAnimator.start()
     }
 
     private fun interpY(
-        a: StateVertex
+        a: PointF,
+        b: PointF
     ): Float {
-        return interp(a.fromY,a.toY)
+        return interp(a.y,b.y)
     }
 
     private fun interpX(
-        a: StateVertex
+        a: PointF,
+        b: PointF
     ): Float {
-        return interp(a.fromX,a.toX)
+        return interp(a.x,b.x)
     }
 
     private fun interp(
@@ -109,6 +120,6 @@ class VectorView(context: Context)
         to: Float
     ): Float {
 
-        return from + (to - from) * mFraction
+        return from + (to - from) * (mAnimator.animatedValue as Float)
     }
 }
